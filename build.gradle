@@ -1,0 +1,26 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'com.github.rvanasa:schoology-api:master-SNAPSHOT'
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    implementation 'com.google.code.gson:gson:2.9.0'
+    implementation 'org.telegram:telegrambots:6.3.0'
+    implementation 'org.xerial:sqlite-jdbc:3.36.0.3'
+}
+
+test {
+    useJUnitPlatform()
+}
