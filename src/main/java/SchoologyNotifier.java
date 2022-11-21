@@ -6,8 +6,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 
 public class SchoologyNotifier extends TelegramLongPollingBot {
-    private final String username = "";
-    private final String token = "";
+    private final String username = "schoology-notifier-bot";
     private Commands commands = new Commands();
 
     @Override

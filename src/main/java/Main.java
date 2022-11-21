@@ -12,10 +12,6 @@ public class Main {
 
     public static void main(String[] args) {
         final Schoology schoology = new Schoology();
-        final int userID = ;
-        final String userDomain = "";
-        final String userAPIKey = "";
-        final String userAPISecret = "";
         // User user = schoology.initializeUser(userID, userDomain, userAPIKey, userAPISecret);
         // System.out.println(user.getCourses()[0].getAssignments()[user.getCourses()[0].getAssignments().length - 1].getDue());
         // System.out.println(user.getCourses()[0].getAssignments()[user.getCourses()[0].getAssignments().length - 1].isSubmitted());

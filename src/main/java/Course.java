@@ -1,4 +1,6 @@
-public class Course {
+import java.io.Serializable;
+
+public class Course implements Serializable {
     private long id;
     private String course_title;
     private String course_code;

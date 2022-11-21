@@ -1,4 +1,6 @@
-public class Submissions {
+import java.io.Serializable;
+
+public class Submissions implements Serializable {
     private int revision_id = 0;
     private long created;
     private int late;

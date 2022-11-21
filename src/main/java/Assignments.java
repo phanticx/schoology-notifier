@@ -1,10 +1,11 @@
+import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
-public class Assignments {
+public class Assignments implements Serializable {
     private long id;
     private String title;
     private String description;

@@ -1,5 +1,7 @@
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import java.io.*;
+import java.sql.*;
 import java.util.ArrayList;
 
 public class Commands {
@@ -37,11 +39,8 @@ public class Commands {
         return "This is an automated Schoology Notifier to remind you wen upcoming assignments are due.";
     }
     public String initialize() {
-        final int userID = ;
-        final String userDomain = "";
-        final String userAPIKey = "";
-        final String userAPISecret = "";
         this.user = new Schoology().initializeUser(userID, userDomain, userAPIKey, userAPISecret);
+        updateDatabase(userID, user);
 
         return "Initialization complete. First course: " + user.getCourses()[0].getCourse_title();
     }
@@ -63,5 +62,87 @@ public class Commands {
     }
     public void settings() {
 
+    }
+
+    private Connection connect() {
+        String url = "jdbc:sqlite:users.db";
+        Connection conn = null;
+        try {
+            conn = DriverManager.getConnection(url);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return conn;
+    }
+
+    private void updateDatabase(int userID, User user) {
+        try (Connection conn = this.connect();
+             PreparedStatement statement = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS users (" +
+                         "userid INTEGER NOT NULL UNIQUE,"  +
+                         "user BLOB NOT NULL UNIQUE);"
+             )) {
+            statement.executeUpdate();
+
+            PreparedStatement statement2 = conn.prepareStatement(
+                    "SELECT EXISTS (" +
+                        "SELECT 1 " +
+                        "FROM users " +
+                        "WHERE userid = ?" +
+                        "LIMIT 1 )");
+            statement2.setInt(1, userID);
+            ResultSet result = statement2.executeQuery();
+
+            if (!result.isBeforeFirst()) {
+                    PreparedStatement statement3 = conn.prepareStatement(
+                            "UPDATE users " +
+                                "SET user = ?, " +
+                                "WHERE userid = ?" );
+                    statement3.setBytes(1, makeBytes(user));
+                    statement3.setInt(2, userID);
+                    statement3.executeUpdate();
+            } else {
+                    PreparedStatement statement3 = conn.prepareStatement(
+                            "INSERT INTO users (userid, user)" +
+                                "VALUES(?,?);");
+                    statement3.setInt(1, userID);
+                    statement3.setBytes(2, makeBytes(user));
+                    statement3.executeUpdate();
+            }
+            conn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public byte[] makeBytes(User user) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(user);
+            byte[] bytes = baos.toByteArray();
+            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+            return bytes;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public User readBytes(byte[] data) {
+        try {
+            ByteArrayInputStream baip = new ByteArrayInputStream(data);
+            ObjectInputStream ois = new ObjectInputStream(baip);
+            User user = (User) ois.readObject();
+            return user;
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }
