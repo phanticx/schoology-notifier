@@ -9,10 +9,18 @@ public class Schoology {
     final Gson gson = new Gson();
     final JsonParser jsonParser = new JsonParser();
     public User initializeUser(int userID, String domain, String key, String secret) {
-        // Initializes user courses
+        // Get user names
         final SchoologyRequestHandler schoology = new SchoologyRequestHandler(domain, key, secret);
-        SchoologyResponseBody response = schoology.get("users/"+ String.valueOf(userID) + "/sections").requireSuccess().getBody();
+        SchoologyResponseBody response = schoology.get("users/" + String.valueOf(userID)).requireSuccess().getBody();
         JsonObject json = (JsonObject) jsonParser.parse(response.getRawData());
+        String firstName = json.get("name_first").getAsString();
+        System.out.println(firstName);
+        String lastName = json.get("name_last").getAsString();
+        System.out.println(lastName);
+
+        // Initializes user courses
+        response = schoology.get("users/"+ String.valueOf(userID) + "/sections").requireSuccess().getBody();
+        json = (JsonObject) jsonParser.parse(response.getRawData());
         JsonArray courses = json.get("section").getAsJsonArray();
         Course[] sections = gson.fromJson(courses, Course[].class);
 
@@ -40,7 +48,7 @@ public class Schoology {
         }
 
         // Places all Course objects into a User object to return
-        User user = new User(userID, sections);
+        User user = new User(userID, sections, firstName, lastName, domain, key, secret);
 
         return user;
     }

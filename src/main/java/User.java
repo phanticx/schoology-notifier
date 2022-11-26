@@ -1,4 +1,5 @@
 import java.io.Serializable;
+import java.util.Arrays;
 
 public class User implements Serializable {
     private int userID;
@@ -6,6 +7,22 @@ public class User implements Serializable {
     private String firstName;
     private String lastName;
     private String userDomain;
+
+    private static final long serialVersionUID = 1L;
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "userID=" + userID +
+                ", courses=" + Arrays.toString(courses) +
+                ", firstName='" + firstName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                ", userDomain='" + userDomain + '\'' +
+                ", userAPIKey='" + userAPIKey + '\'' +
+                ", userAPISecret='" + userAPISecret + '\'' +
+                '}';
+    }
+
     private String userAPIKey;
     private String userAPISecret;
 
@@ -25,7 +42,7 @@ public class User implements Serializable {
     }
 
     public String getFirstName() {
-        return firstName;
+        return this.firstName;
     }
 
     public void setFirstName(String firstName) {

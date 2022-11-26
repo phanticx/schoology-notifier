@@ -9,23 +9,27 @@ public class Commands {
     private User user;
     public String check(String message) {
         String reply = "";
-        switch(message) {
-            case "/help":
+        switch(message.replace("/", "")) {
+            case "help":
                 System.out.println("Calling /help");
                 reply = help();
                 break;
-            case "/init":
-            case "/initialize":
+            case "init":
+            case "initialize":
                 System.out.println("Calling /initialize");
                 reply = initialize();
                 break;
-            case "/overdue":
+            case "overdue":
                 System.out.println("Calling /overdue");
                 reply = overdue();
                 break;
-            case "/settings":
+            case "settings":
                 System.out.println("Calling /settings");
                 reply = "geg3rt3r34yheue";
+                break;
+            case "temp":
+                System.out.println("Calling /temp");
+                reply = temp();
                 break;
             default:
                 reply = "Unknown command. Please try again.";
@@ -36,10 +40,15 @@ public class Commands {
     }
 
     public String help() {
-        return "This is an automated Schoology Notifier to remind you wen upcoming assignments are due.";
+        return "This is an automated Schoology Notifier to remind you when upcoming assignments are due.";
     }
+
     public String initialize() {
-        this.user = new Schoology().initializeUser(userID, userDomain, userAPIKey, userAPISecret);
+        final int userID = ;
+        final String userDomain = "";
+        final String userAPIKey = "";
+        final String userAPISecret = "";
+        User user = new Schoology().initializeUser(userID, userDomain, userAPIKey, userAPISecret);
         updateDatabase(userID, user);
 
         return "Initialization complete. First course: " + user.getCourses()[0].getCourse_title();
@@ -60,6 +69,13 @@ public class Commands {
         }
         return overdueAssignments;
     }
+
+    public String temp() {
+        User user = queryDatabase();
+        System.out.println(user);
+        return user.getUserDomain();
+    }
+
     public void settings() {
 
     }
@@ -72,59 +88,103 @@ public class Commands {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        System.out.println("Connection to SQL database established");
         return conn;
     }
 
     private void updateDatabase(int userID, User user) {
-        try (Connection conn = this.connect();
-             PreparedStatement statement = conn.prepareStatement(
-                     "CREATE TABLE IF NOT EXISTS users (" +
-                         "userid INTEGER NOT NULL UNIQUE,"  +
-                         "user BLOB NOT NULL UNIQUE);"
-             )) {
-            statement.executeUpdate();
-
-            PreparedStatement statement2 = conn.prepareStatement(
-                    "SELECT EXISTS (" +
-                        "SELECT 1 " +
-                        "FROM users " +
-                        "WHERE userid = ?" +
-                        "LIMIT 1 )");
-            statement2.setInt(1, userID);
-            ResultSet result = statement2.executeQuery();
-
-            if (!result.isBeforeFirst()) {
-                    PreparedStatement statement3 = conn.prepareStatement(
-                            "UPDATE users " +
-                                "SET user = ?, " +
-                                "WHERE userid = ?" );
-                    statement3.setBytes(1, makeBytes(user));
-                    statement3.setInt(2, userID);
-                    statement3.executeUpdate();
+        tableExists();
+        try (Connection conn = this.connect();) {
+            if (userExists(userID)) {
+                PreparedStatement statement = conn.prepareStatement(
+                        "UPDATE users " +
+                            "SET user = ? " +
+                            "WHERE userid = ?;" );
+                statement.setBytes(1, makeBytes(user));
+                statement.setInt(2, userID);
+                statement.executeUpdate();
             } else {
-                    PreparedStatement statement3 = conn.prepareStatement(
-                            "INSERT INTO users (userid, user)" +
-                                "VALUES(?,?);");
-                    statement3.setInt(1, userID);
-                    statement3.setBytes(2, makeBytes(user));
-                    statement3.executeUpdate();
+                PreparedStatement statement = conn.prepareStatement(
+                        "INSERT INTO users (userid, user) " +
+                            "VALUES (?, ?);");
+                statement.setInt(1, userID);
+                statement.setBytes(2, makeBytes(user));
+                statement.executeUpdate();
             }
             conn.close();
+            return;
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
     }
 
+    public void tableExists() {
+        try (Connection conn = this.connect();
+             PreparedStatement statement = conn.prepareStatement(
+                     "CREATE TABLE IF NOT EXISTS users (" +
+                         "userid INTEGER NOT NULL UNIQUE,"  +
+                         "user MEDIUMBLOB NOT NULL UNIQUE);")) {
+            statement.executeUpdate();
+            conn.close();
+            return;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean userExists(int userID) {
+        try (Connection conn = this.connect();
+             PreparedStatement statement = conn.prepareStatement(
+                     "SELECT EXISTS (" +
+                             "SELECT * " +
+                             "FROM users " +
+                             "WHERE userid = ?" +
+                             "LIMIT 1 )")) {
+            statement.setInt(1, userID);
+            ResultSet result = statement.executeQuery();
+
+            if (!result.isBeforeFirst()) {
+                conn.close();
+                return false;
+            } else {
+                conn.close();
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public User queryDatabase(int userID) {
+        try(Connection conn = this.connect();
+            PreparedStatement statement = conn.prepareStatement(
+                    "SELECT user " +
+                        "FROM users " +
+                        "WHERE userid = ?;")) {
+            statement.setInt(1, userID);
+            ResultSet result = statement.executeQuery();
+            byte[] byteArray = result.getBytes("user");
+            User user = readBytes(byteArray);
+            conn.close();
+            return user;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
     public byte[] makeBytes(User user) {
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
             oos.writeObject(user);
-            byte[] bytes = baos.toByteArray();
-            ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+            byte bytes[] = bos.toByteArray();
+            oos.close();
             return bytes;
-        } catch (IOException e) {
+           } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -133,9 +193,10 @@ public class Commands {
 
     public User readBytes(byte[] data) {
         try {
-            ByteArrayInputStream baip = new ByteArrayInputStream(data);
-            ObjectInputStream ois = new ObjectInputStream(baip);
+            ByteArrayInputStream bias = new ByteArrayInputStream(data);
+            ObjectInputStream ois = new ObjectInputStream(bias);
             User user = (User) ois.readObject();
+            ois.close();
             return user;
         } catch (IOException e) {
             e.printStackTrace();
