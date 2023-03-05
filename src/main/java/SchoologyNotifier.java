@@ -1,4 +1,3 @@
-import org.checkerframework.checker.units.qual.C;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -7,57 +6,45 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 public class SchoologyNotifier extends TelegramLongPollingBot {
     private final String username = "schoology-notifier-bot";
-    private final String token = "";
+    private final String token = "5647156605:AAFN_rIhzElnUj6HsM5nIoOnokdSUApuSYg";
     private static final Commands callCommand = new Commands();
-    private String args[];
-    private int argsSize;
-    private boolean waitingforresponse = false;
-    private int responseLength;
-    private String responseType;
 
     @Override
     public void onUpdateReceived(Update update) {
         String message = update.getMessage().getText();
         long chat_id = update.getMessage().getChatId();
         long user_id = update.getMessage().getFrom().getId();
-        System.out.println(user_id);
+        System.out.println("Message from Telegram ID: " + user_id);
         if (message.substring(0,1).equalsIgnoreCase("/")) {
-            if (waitingforresponse) {
-                sendMsg(chat_id, "Aborting /" + responseType + " because you used another command.");
-                resetResponse();
+            if (ConversationHandler.userInConversation(user_id)) {
+                sendMsg(chat_id, "Aborting /" + ConversationHandler.getConversationResponseType(user_id) + " because you used another command.");
+                ConversationHandler.removeConversation(user_id);
             }
-            String reply = callCommands(message, user_id);
-            sendMsg(chat_id, reply);
-        } else if (waitingforresponse && (responseType.equalsIgnoreCase("init"))) {
-            try {
-                argsSize++;
-                args[argsSize - 1] = message;
-            } catch (ArrayIndexOutOfBoundsException e) {
-                e.printStackTrace();
-            }
-            if (argsSize == responseLength) {
+            sendMsg(chat_id, callCommands(message, user_id));
+        } else if (ConversationHandler.userInConversation(user_id) && (ConversationHandler.getConversationResponseType(user_id).equalsIgnoreCase("init"))) {
+                ConversationHandler.addConversationArg(user_id, message);
+            if (ConversationHandler.getConversationArgsLength(user_id) == ConversationHandler.getConversationResponseLength(user_id)) {
                 sendMsg(chat_id, "All responses received. Now initializing...");
                 try {
-                    String reply = callCommand.initialize(args, user_id);
+                    String reply = callCommand.initialize(ConversationHandler.getConversationArgs(user_id), user_id);
                     sendMsg(chat_id, reply);
+                    ConversationHandler.removeConversation(user_id);
                 } catch (InvalidUserInputException e) {
                     e.printStackTrace();
-                    sendMsg(chat_id, "One of your inputs were incorrect. Please try again.");
-                    resetResponse();
+                    sendMsg(chat_id, "One or multiple of your inputs were invalid. Please try again.");
+                    ConversationHandler.removeConversation(user_id);
                 }
             } else {
-                if (argsSize == 1)
+                if (ConversationHandler.getConversationArgsLength(user_id) == 1)
                     sendMsg(chat_id, "Please input your Schoology domain.");
-                if (argsSize == 2)
+                if (ConversationHandler.getConversationArgsLength(user_id) == 2)
                     sendMsg(chat_id, "Please input your Schoology API Key.");
-                if (argsSize == 3)
+                if (ConversationHandler.getConversationArgsLength(user_id) == 3)
                     sendMsg(chat_id, "Please input your Schoology API Secret.");
             }
         } else { //default case
             sendMsg(chat_id, "Unknown command or input. Please try again.");
         }
-
-        // String message_text = update.getMessage().getText();
 
     }
 
@@ -72,11 +59,8 @@ public class SchoologyNotifier extends TelegramLongPollingBot {
             case "init":
             case "initialize":
                 System.out.println("Calling /initialize");
-                if (!waitingforresponse) {
-                    waitingforresponse = true;
-                    responseLength = 4;
-                    responseType = "init";
-                    args = new String[responseLength];
+                if (!ConversationHandler.userInConversation(user_id)) {
+                    ConversationHandler.addConversation(user_id, 4, "init", new String[4]);
                 }
                 reply = "Please input your Schoology user ID";
                 break;
@@ -121,13 +105,4 @@ public class SchoologyNotifier extends TelegramLongPollingBot {
     public String getBotToken() {
         return token;
     }
-
-    public void resetResponse() {
-        waitingforresponse = false;
-        args = null;
-        responseType = "";
-        responseLength = 0;
-        argsSize = 0;
-    }
-
 }

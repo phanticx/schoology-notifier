@@ -7,8 +7,6 @@ import static java.lang.Integer.parseInt;
 
 public class Commands {
 
-
-
     public String help() {
         return "This is an automated Schoology Notifier to remind you when upcoming assignments are due.";
     }
@@ -24,7 +22,7 @@ public class Commands {
             return "Initialization complete. First course: " + user.getCourses()[0].getCourse_title();
         } catch (NumberFormatException e) {
             e.printStackTrace();
-            throw new InvalidUserInputException("bad User id");
+            throw new InvalidUserInputException("bad User ID");
         } catch (SchoologyException e) {
             e.printStackTrace();
             throw new InvalidUserInputException("");
@@ -46,7 +44,6 @@ public class Commands {
             }
             return overdueAssignments;
         }
-
         return "Please run /initialize before checking for overdue assignments!";
     }
 
